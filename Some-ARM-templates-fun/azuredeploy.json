@@ -1,74 +1,59 @@
 {
-  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-  "contentVersion": "1.0.0.0",
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
   "variables": {
     "serverFarmApiVersion": "2018-02-01",
     "workspaceApiVersion": "2017-03-15-preview",
-    "customApplicationInsights": "appInsights",
-    "customWebApp": "customWebApp",
-    "customHostingPlanNameTidy": "[toLower(trim(concat('custom-hosting-plan', parameters('CustomId'))))]",
+    "customHostingPlanNameTidy": "[toLower(trim(concat('custom-hosting-plan', parameters('InfrastructureId'))))]",
     "customTags": {
-      "CustomId": "[parameters('CustomId')]"
+      "InfrastructureId": "[parameters('InfrastructureId')]"
     }
   },
-  "parameters": {
-    "location": {
-      "type": "string",
-      "minLength": 1,
-      "defaultValue": "[resourceGroup().location]"
-    },
-    "CustomId": {
-      "type": "string",
-      "minLength": 4,
-      "maxLength": 4
-    },
-    "resourceSizes": {
-      "type": "object",
-      "defaultValue": {
-        "customHostingPlan": {
-          "SkuName": "S1",
-          "SkuCapacity": 1
+    "parameters": {
+        "location": {
+            "type": "string",
+            "minLength": 1,
+            "defaultValue": "[resourceGroup().location]"
         },
-        "workspace": {
-          "SkuName": "Standalone"
+      "InfrastructureId": {
+        "type": "string",
+        "minLength": 4,
+        "maxLength": 4
+      },
+        "resourceSizes": {
+            "type": "object",
+            "defaultValue": {
+                "customHostingPlan": {
+                    "SkuName": "S1",
+                    "SkuCapacity": 1
+                },
+                "workspace": {
+                    "SkuName": "Standalone"
+                }
+            }
+        }
+    },
+    "resources": [
+      {
+        "type": "Microsoft.Web/serverfarms",
+        "name": "[concat(variables('customHostingPlanNameTidy'), '-', copyindex(3))]",
+        "apiVersion": "[variables('serverFarmApiVersion')]",
+        "location": "[parameters('location')]",
+        "copy": {
+          "name": "serverfarms",
+          "count": 5,
+          "mode": "Serial"
+        },
+        "properties": {
+          "name": "[concat(variables('customHostingPlanNameTidy'), '-', copyindex(3))]"
+        },
+        "sku": {
+          "name": "[parameters('resourceSizes').customHostingPlan.SkuName]",
+          "capacity": "[parameters('resourceSizes').customHostingPlan.SkuCapacity]"
+        },
+        "tags": {
+          "InfrastructureId": "[variables('customTags').InfrastructureId]"
         }
       }
-    }
-  },
-  "resources": [
-    {
-      "type": "Microsoft.Insights/Components",
-      "name": "[variables('customApplicationInsights')]",
-      "apiVersion": "2015-05-01",
-      "location": "[parameters('location')]",
-      "properties": {
-        "ApplicationId": "[variables('customApplicationInsights')]",
-        "Application_Type": "web"
-      },
-      "tags": {
-        "ApplicationInsightsCustomTag": "[variables('customTags').customId]"
-      }
-    },
-    {
-      "type": "Microsoft.Web/serverfarms",
-      "name": "[concat(variables('customHostingPlanNameTidy'), '-', copyindex(3))]",
-      "apiVersion": "2018-02-01",
-      "location": "[parameters('location')]",
-      "copy": {
-        "name": "serverfarms",
-        "count": 5,
-        "mode": "Serial"
-      },
-      "properties": {
-        "name": "[concat(variables('customHostingPlanNameTidy'), '-', copyindex(3))]"
-      },
-      "sku": {
-        "name": "[parameters('resourceSizes').customHostingPlan.SkuName]",
-        "capacity": "[parameters('resourceSizes').customHostingPlan.SkuCapacity]"
-      },
-      "tags": {
-        "CustomTag": "[variables('customTags').customId]"
-      }
-    }
-  ]
+    ]
 }
